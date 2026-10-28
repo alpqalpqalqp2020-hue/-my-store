@@ -10,7 +10,7 @@ const VIEWS = [
 ];
 
 // لوحة المنتج: صور مصغّرة + بطاقة فيها الاسم والسعر والمقاس وزر الإضافة
-export default function ProductPanel({ product, view, onView, size, onSize, onAdd, inCart }) {
+export default function ProductPanel({ product, view, onView, size, onSize, onAdd, inCart, cartCount, onViewCart }) {
   const [needSize, setNeedSize] = useState(false); // يظهر التنبيه الأحمر
   const [shake, setShake] = useState(0); // رقم يتغير لإعادة تشغيل حركة الاهتزاز
 
@@ -78,6 +78,11 @@ export default function ProductPanel({ product, view, onView, size, onSize, onAd
         <button key={`add-${shake}`} className={`add-btn ${needSize ? "shake" : ""}`} onClick={handleAdd}>
           {inCart ? "تمت الإضافة ✓" : "أضف إلى السلة"}
         </button>
+        {cartCount > 0 && (
+          <button className="link-btn view-cart" onClick={onViewCart}>
+            عرض السلة ({cartCount})
+          </button>
+        )}
       </section>
     </div>
   );

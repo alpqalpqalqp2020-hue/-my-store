@@ -4,6 +4,7 @@ import * as THREE from "three";
 import Scene from "./scene/Scene";
 import ProductPanel from "./components/ProductPanel";
 import CartButton from "./components/CartButton";
+import CartDrawer from "./components/CartDrawer";
 import useCart from "./lib/useCart";
 import { products, STORE_NAME, STORE_TAGLINE } from "./data/products";
 
@@ -11,6 +12,7 @@ export default function App() {
   const [openId, setOpenId] = useState(null); // المنتج المفتوح
   const [view, setView] = useState(0); // 0 أمام ، 1 جانب ، 2 خلف
   const [size, setSize] = useState(null); // المقاس المختار
+  const [cartOpen, setCartOpen] = useState(false); // درج السلة
   const cart = useCart();
 
   const product = products.find((p) => p.id === openId) ?? null;
@@ -22,12 +24,16 @@ export default function App() {
   }, []);
   const close = useCallback(() => setOpenId(null), []);
 
-  // زر Esc يغلق المنتج
+  // زر Esc يغلق السلة أولًا، ثم المنتج
   useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && close();
+    const onKey = (e) => {
+      if (e.key !== "Escape") return;
+      if (cartOpen) setCartOpen(false);
+      else close();
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [close]);
+  }, [close, cartOpen]);
 
   return (
     <div className="app">
@@ -58,7 +64,7 @@ export default function App() {
       )}
 
       <div className="top-right">
-        <CartButton count={cart.count} onClick={() => {}} />
+        <CartButton count={cart.count} onClick={() => setCartOpen(true)} />
       </div>
 
       {product && (
@@ -70,10 +76,14 @@ export default function App() {
           onSize={setSize}
           inCart={!!size && cart.has(product.id, size)}
           onAdd={() => cart.add(product.id, size)}
+          cartCount={cart.count}
+          onViewCart={() => setCartOpen(true)}
         />
       )}
 
-      {!product && <div className="hint">مرّر المؤشر على القطعة وانقر عليها · على الجوال المسها مرتين</div>}
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} />
+
+      {!product && !cartOpen && <div className="hint">مرّر المؤشر على القطعة وانقر عليها · على الجوال المسها مرتين</div>}
     </div>
   );
 }

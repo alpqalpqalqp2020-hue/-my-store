@@ -334,3 +334,284 @@ body {
     text-align: center;
   }
 }
+
+/* ============================================================
+   درج السلة ونموذج الطلب
+   ============================================================ */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 26, 18, 0.28);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+  z-index: 40;
+}
+.scrim.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 100vw);
+  display: flex;
+  flex-direction: column;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px calc(env(safe-area-inset-bottom, 0px) + 18px);
+  background: rgba(250, 249, 246, 0.94);
+  backdrop-filter: blur(24px);
+  box-shadow: -20px 0 60px rgba(40, 35, 25, 0.18);
+  overflow-y: auto;
+  transform: translateX(105%);
+  visibility: hidden;
+  transition: transform 0.35s cubic-bezier(0.22, 0.8, 0.3, 1), visibility 0.35s;
+  z-index: 50;
+}
+.drawer.open {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.drawer-head {
+  display: grid;
+  grid-template-columns: 70px 1fr 40px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.drawer-head h2 {
+  text-align: center;
+  font-size: 17px;
+  font-weight: 800;
+}
+.x-btn {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 14px;
+  cursor: pointer;
+}
+.link-btn {
+  border: 0;
+  background: none;
+  font: 600 13px "Cairo", system-ui, sans-serif;
+  color: #333;
+  cursor: pointer;
+  text-align: start;
+}
+.link-btn.danger {
+  margin-top: 4px;
+  color: #b3261e;
+}
+.view-cart {
+  display: block;
+  margin: 10px auto 0;
+  text-decoration: underline;
+}
+
+.empty {
+  margin: auto;
+  text-align: center;
+  color: #666;
+}
+.empty p {
+  margin-bottom: 14px;
+}
+
+.cart-list {
+  list-style: none;
+  flex: 1;
+}
+.cart-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.cart-item img {
+  width: 76px;
+  height: 92px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: rgba(228, 226, 220, 0.6);
+}
+.ci-main {
+  flex: 1;
+  min-width: 0;
+}
+.ci-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+.ci-meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #777;
+}
+.ci-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.ci-price {
+  font-weight: 700;
+  font-size: 14px;
+}
+.qty {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 999px;
+  background: #fff;
+  direction: ltr;
+}
+.qty button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+.qty span {
+  min-width: 24px;
+  text-align: center;
+  font: 700 14px "Inter", system-ui, sans-serif;
+}
+
+.totals {
+  margin: 16px 0 14px;
+  font-size: 14px;
+}
+.totals > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  color: #555;
+}
+.totals .grand {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  font-size: 16px;
+  font-weight: 800;
+  color: #111;
+}
+.totals.compact {
+  margin: 4px 0 0;
+}
+
+.primary-btn {
+  width: 100%;
+  height: 52px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(#2a2a2a, #0d0d0d);
+  color: #fff;
+  font: 700 15px "Cairo", system-ui, sans-serif;
+  cursor: pointer;
+}
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.secondary-btn {
+  padding: 10px 22px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 999px;
+  background: #fff;
+  font: 600 14px "Cairo", system-ui, sans-serif;
+  cursor: pointer;
+}
+.note {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: #777;
+}
+
+/* النموذج */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.form input,
+.form select,
+.form textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 12px;
+  background: #fff;
+  font: 400 16px "Cairo", system-ui, sans-serif; /* 16px يمنع تكبير الصفحة تلقائيًا في الآيفون */
+  color: #111;
+}
+.form textarea {
+  resize: none;
+}
+.form em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 600;
+  color: #d3202a;
+}
+.hp {
+  position: absolute !important;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.server-error {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(211, 32, 42, 0.1);
+  color: #b3261e;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* شاشة التأكيد */
+.done {
+  margin: auto 0;
+  text-align: center;
+}
+.done .tick {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  font-size: 32px;
+}
+.done p {
+  margin-bottom: 8px;
+}
+.done .order-no {
+  font-size: 15px;
+}
+.done .primary-btn {
+  margin-top: 18px;
+}
+
+@media (max-width: 760px) {
+  .view-cart {
+    display: none;
+  }
+}
