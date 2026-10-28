@@ -30,7 +30,16 @@ function placeCard(mesh, view, mirrored, w, h) {
   mesh.position.y = (view.anchor[1] - 0.5) * h;
 }
 
-export default function PhotoGarment({ id, target = REST_TURN, position = [0, 0, 0] }) {
+export default function PhotoGarment({
+  id,
+  target = REST_TURN, // الزاوية التي تتجه إليها القطعة
+  initialTurn = REST_TURN, // زاوية البداية
+  cutKey = 0, // إذا تغيّر الرقم: قفزة فورية إلى الهدف مع تلاشٍ سريع
+  castShadows = true,
+  hidden = false,
+  renderOrder = 0,
+  position = [0, 0, 0],
+}) {
   const views = garmentViews[id];
   const urls = ["front", "side", "back"].map(
     (v) => `/garments/${id}/${v}.webp?v=${ASSET_VERSION}`
@@ -45,7 +54,9 @@ export default function PhotoGarment({ id, target = REST_TURN, position = [0, 0,
   const textures = [loaded[0], loaded[1], loaded[2], loaded[1]];
 
   const { camera } = useThree();
-  const turn = useRef(REST_TURN);
+  const turn = useRef(initialTurn);
+  const fade = useRef(1);
+  const lastCut = useRef(cutKey);
   const lastA = useRef(-1);
   const lastB = useRef(-1);
   const group = useRef();
@@ -56,8 +67,18 @@ export default function PhotoGarment({ id, target = REST_TURN, position = [0, 0,
   const matB = useRef();
 
   useFrame((_, dt) => {
+    const step = Math.min(dt, 0.05);
+
+    // قفزة فورية (بدل الدوران عبر كل الجوانب) مع تلاشٍ سريع
+    if (lastCut.current !== cutKey) {
+      lastCut.current = cutKey;
+      turn.current = target;
+      fade.current = 0.1;
+    }
+    fade.current = Math.min(1, fade.current + step * 5);
+
     // حركة ناعمة نحو الهدف
-    turn.current = THREE.MathUtils.damp(turn.current, target, 8, Math.min(dt, 0.05));
+    turn.current = THREE.MathUtils.damp(turn.current, target, 8, step);
 
     const t = turn.current / QUARTER;
     const i = Math.floor(t);
@@ -87,8 +108,8 @@ export default function PhotoGarment({ id, target = REST_TURN, position = [0, 0,
 
     // التبديل بين الصورتين يحدث في نطاق ضيق في المنتصف
     const s = smootherstep((f - (0.5 - BAND / 2)) / BAND);
-    matB.current.opacity = clamp(s * 2);
-    matA.current.opacity = clamp(2 * (1 - s));
+    matB.current.opacity = clamp(s * 2) * fade.current;
+    matA.current.opacity = clamp(2 * (1 - s)) * fade.current;
     meshA.current.visible = matA.current.opacity > 0.002;
     meshB.current.visible = matB.current.opacity > 0.002;
 
@@ -114,13 +135,13 @@ export default function PhotoGarment({ id, target = REST_TURN, position = [0, 0,
   );
 
   return (
-    <group ref={group} position={position}>
+    <group ref={group} position={position} visible={!hidden}>
       <group ref={inner}>
-        <mesh ref={meshA} castShadow>
+        <mesh ref={meshA} castShadow={castShadows} renderOrder={renderOrder}>
           <planeGeometry args={[1, 1]} />
           {cardMaterial(matA)}
         </mesh>
-        <mesh ref={meshB} castShadow>
+        <mesh ref={meshB} castShadow={castShadows} renderOrder={renderOrder}>
           <planeGeometry args={[1, 1]} />
           {cardMaterial(matB)}
         </mesh>

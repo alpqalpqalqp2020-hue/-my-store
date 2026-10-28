@@ -1,10 +1,34 @@
-import { Suspense } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
 import Scene from "./scene/Scene";
-import { STORE_NAME, STORE_TAGLINE } from "./data/products";
+import ProductPanel from "./components/ProductPanel";
+import CartButton from "./components/CartButton";
+import useCart from "./lib/useCart";
+import { products, STORE_NAME, STORE_TAGLINE } from "./data/products";
 
 export default function App() {
+  const [openId, setOpenId] = useState(null); // المنتج المفتوح
+  const [view, setView] = useState(0); // 0 أمام ، 1 جانب ، 2 خلف
+  const [size, setSize] = useState(null); // المقاس المختار
+  const cart = useCart();
+
+  const product = products.find((p) => p.id === openId) ?? null;
+
+  const open = useCallback((id) => {
+    setOpenId(id);
+    setView(0);
+    setSize(null);
+  }, []);
+  const close = useCallback(() => setOpenId(null), []);
+
+  // زر Esc يغلق المنتج
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && close();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [close]);
+
   return (
     <div className="app">
       <Canvas
@@ -18,7 +42,7 @@ export default function App() {
         }}
       >
         <Suspense fallback={null}>
-          <Scene />
+          <Scene openId={openId} view={view} onOpen={open} />
         </Suspense>
       </Canvas>
 
@@ -27,7 +51,29 @@ export default function App() {
         <div className="tagline">{STORE_TAGLINE}</div>
       </header>
 
-      <div className="hint">مرّر المؤشر على القطعة لتواجهك · على الجوال المسها</div>
+      {product && (
+        <button className="close-btn" onClick={close}>
+          إغلاق
+        </button>
+      )}
+
+      <div className="top-right">
+        <CartButton count={cart.count} onClick={() => {}} />
+      </div>
+
+      {product && (
+        <ProductPanel
+          product={product}
+          view={view}
+          onView={setView}
+          size={size}
+          onSize={setSize}
+          inCart={!!size && cart.has(product.id, size)}
+          onAdd={() => cart.add(product.id, size)}
+        />
+      )}
+
+      {!product && <div className="hint">مرّر المؤشر على القطعة وانقر عليها · على الجوال المسها مرتين</div>}
     </div>
   );
 }

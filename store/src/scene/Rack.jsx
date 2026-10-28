@@ -1,28 +1,34 @@
 import { useEffect, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import Rail from "./Rail";
-import ChromeHook, { HOOK_LENGTH, HOOK_Z } from "./ChromeHook";
+import ChromeHook from "./ChromeHook";
 import PhotoGarment, { REST_TURN } from "./PhotoGarment";
-
-const RAIL_Y = 1.75;
-const SPACING = 0.7; // المسافة بين القطع على القضيب
+import { RAIL_Y, SPACING, railX, hangPosition } from "./layout";
 
 // قضيب الملابس: قضيب + قطع معلّقة + منطقة تفاعل واحدة غير مرئية
-export default function Rack({ items }) {
+export default function Rack({ items, openId, hiddenId, onOpen }) {
   const n = items.length;
   const length = Math.max(3, n * SPACING + 0.8);
-  const xs = items.map((_, i) => (i - (n - 1) / 2) * SPACING);
+  const xs = items.map((_, i) => railX(i, n));
 
   const [hovered, setHovered] = useState(-1); // القطعة التي يقف عليها المؤشر
-  const [pinned, setPinned] = useState(-1); // القطعة المثبّتة بالنقر/اللمس
+  const [pinned, setPinned] = useState(-1); // القطعة المثبّتة باللمس
+
+  // عند إغلاق المنتج نعيد القطع إلى وضع الراحة
+  useEffect(() => {
+    if (!openId) {
+      setHovered(-1);
+      setPinned(-1);
+    }
+  }, [openId]);
 
   // شكل المؤشر: يد عند الوقوف فوق قطعة
   useEffect(() => {
-    document.body.style.cursor = hovered >= 0 ? "pointer" : "auto";
+    document.body.style.cursor = hovered >= 0 && !openId ? "pointer" : "auto";
     return () => {
       document.body.style.cursor = "auto";
     };
-  }, [hovered]);
+  }, [hovered, openId]);
 
   // نختار أقرب قطعة لموضع المؤشر على القضيب
   const pick = (x) => {
@@ -47,29 +53,38 @@ export default function Rack({ items }) {
           <ChromeHook />
           <PhotoGarment
             id={p.id}
-            position={[0, -HOOK_LENGTH, HOOK_Z + 0.006]}
+            position={[0, hangPosition(i, n)[1] - RAIL_Y, hangPosition(i, n)[2]]}
+            hidden={openId === p.id || hiddenId === p.id}
             target={hovered === i || pinned === i ? 0 : REST_TURN}
           />
         </SwayingHanger>
       ))}
 
       {/* منطقة تفاعل واحدة فوق كل القطع (تمنع الارتجاف بين القطع) */}
-      <mesh
-        position={[0, RAIL_Y - 0.4, 0.1]}
-        onPointerMove={(e) => {
-          e.stopPropagation();
-          setHovered(pick(e.point.x));
-        }}
-        onPointerOut={() => setHovered(-1)}
-        onClick={(e) => {
-          e.stopPropagation();
-          const i = pick(e.point.x);
-          setPinned((cur) => (cur === i ? -1 : i));
-        }}
-      >
-        <planeGeometry args={[length, 0.95]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-      </mesh>
+      {!openId && (
+        <mesh
+          position={[0, RAIL_Y - 0.4, 0.1]}
+          onPointerMove={(e) => {
+            e.stopPropagation();
+            setHovered(pick(e.point.x));
+          }}
+          onPointerOut={() => setHovered(-1)}
+          onClick={(e) => {
+            e.stopPropagation();
+            const i = pick(e.point.x);
+            if (i < 0) return;
+            const touch = (e.pointerType ?? e.nativeEvent?.pointerType) === "touch";
+            if (touch && pinned !== i) {
+              setPinned(i); // اللمسة الأولى: تواجهك القطعة
+            } else {
+              onOpen(items[i].id); // النقرة بالفأرة، أو اللمسة الثانية: افتح المنتج
+            }
+          }}
+        >
+          <planeGeometry args={[length, 0.95]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        </mesh>
+      )}
     </group>
   );
 }

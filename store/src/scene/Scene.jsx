@@ -1,21 +1,25 @@
+import { useState } from "react";
 import { Environment, Lightformer } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
 import Wall from "./Wall";
 import Rack from "./Rack";
+import Stage from "./Stage";
 import { products } from "../data/products";
 
 // نقطة ينظر إليها المشاهد
 const LOOK_AT = new THREE.Vector3(0, 1.45, 0);
 
 // الكاميرا تتحرك حركة طفيفة جدًا مع المؤشر لتعطي إحساسًا بالعمق
-function CameraRig() {
+// (وتثبت عندما يكون هناك منتج مفتوح)
+function CameraRig({ frozen }) {
   const base = useRef(null);
   useFrame(({ camera, pointer }, dt) => {
     if (!base.current) base.current = camera.position.clone();
-    const tx = base.current.x + pointer.x * 0.12;
-    const ty = base.current.y + pointer.y * 0.05;
+    const k = frozen ? 0 : 1;
+    const tx = base.current.x + pointer.x * 0.12 * k;
+    const ty = base.current.y + pointer.y * 0.05 * k;
     camera.position.x = THREE.MathUtils.damp(camera.position.x, tx, 3, dt);
     camera.position.y = THREE.MathUtils.damp(camera.position.y, ty, 3, dt);
     camera.lookAt(LOOK_AT);
@@ -23,8 +27,9 @@ function CameraRig() {
   return null;
 }
 
-export default function Scene() {
+export default function Scene({ openId, view, onOpen }) {
   const clothes = products.filter((p) => p.category === "clothing");
+  const [shownId, setShownId] = useState(null); // المنتج الذي تعرضه المنصة الآن
 
   return (
     <>
@@ -59,8 +64,9 @@ export default function Scene() {
       />
 
       <Wall />
-      <Rack items={clothes} />
-      <CameraRig />
+      <Rack items={clothes} openId={openId} hiddenId={shownId} onOpen={onOpen} />
+      <Stage items={clothes} openId={openId} view={view} onShown={setShownId} />
+      <CameraRig frozen={!!openId} />
     </>
   );
 }
