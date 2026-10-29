@@ -1,1 +1,1 @@
-{ "name": "my-store", "compatibility_date": "2026-10-25", "assets": { "directory": "./dist", "not_found_handling": "single-page-application" } }
+{ "name": "my-store", "main": "worker/index.js", "compatibility_date": "2026-10-25", "assets": { "directory": "./dist", "binding": "ASSETS", "not_found_handling": "single-page-application", "run_worker_first": ["/api/*"] } }
