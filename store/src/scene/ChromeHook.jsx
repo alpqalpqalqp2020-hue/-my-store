@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import * as THREE from "three";
+import { RAIL_RADIUS, HOOK_LENGTH, HOOK_Z } from "./constants";
+
+// نعيد تصدير الأرقام لأن ملفات أخرى تستوردها من هنا
+export { RAIL_RADIUS, HOOK_LENGTH, HOOK_Z };
 
 // خطّاف معدني يلتف فوق القضيب. نقطة (0,0,0) هي محور القضيب.
 // ينتهي طرفه السفلي عند (0, -length, rho) حيث تعلّق الشماعة.
-export const RAIL_RADIUS = 0.014;
-export const HOOK_LENGTH = 0.075;
-export const HOOK_Z = RAIL_RADIUS + 0.003;
-
 export default function ChromeHook() {
   const geometry = useMemo(() => {
     const rho = HOOK_Z;

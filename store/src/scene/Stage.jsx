@@ -23,7 +23,7 @@ const _up = new THREE.Vector3();
 const _origin = new THREE.Vector3();
 const _rack = new THREE.Vector3();
 
-export default function Stage({ items, openId, view, onShown }) {
+export default function Stage({ items, layout, openId, view, onShown }) {
   const { camera, size } = useThree();
   const [shownId, setShownId] = useState(null);
   const [cut, setCut] = useState(0);
@@ -96,7 +96,7 @@ export default function Stage({ items, openId, view, onShown }) {
       .addScaledVector(_up, offY + (garmentH * fit) / 2); // أصل القطعة = أعلى الشماعة
 
     const idx = items.findIndex((p) => p.id === shownId);
-    const [rx, ry, rz] = hangPosition(Math.max(idx, 0), items.length);
+    const [rx, ry, rz] = hangPosition(layout, Math.max(idx, 0));
     _rack.set(rx, ry, rz);
 
     group.current.position.lerpVectors(_rack, _origin, s);

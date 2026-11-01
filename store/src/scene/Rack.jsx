@@ -1,18 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
 import Rail from "./Rail";
 import ChromeHook from "./ChromeHook";
 import PhotoGarment, { REST_TURN } from "./PhotoGarment";
-import { RAIL_Y, SPACING, railX, hangPosition } from "./layout";
+import { RAIL_Y, HOOK_Z } from "./constants";
+import { hangPosition, pickIndex, slideOffset } from "./layout";
+import { pan } from "./pan";
 
-// قضيب الملابس: قضيب + قطع معلّقة + منطقة تفاعل واحدة غير مرئية
-export default function Rack({ items, openId, hiddenId, onOpen }) {
-  const n = items.length;
-  const length = Math.max(3, n * SPACING + 0.8);
-  const xs = items.map((_, i) => railX(i, n));
-
+// قضيب الملابس: قضيب + قطع معلّقة متقاربة + منطقة تفاعل واحدة غير مرئية
+export default function Rack({ items, layout, openId, hiddenId, onOpen }) {
   const [hovered, setHovered] = useState(-1); // القطعة التي يقف عليها المؤشر
   const [pinned, setPinned] = useState(-1); // القطعة المثبّتة باللمس
+  const active = hovered >= 0 ? hovered : pinned; // القطعة المفتوحة الآن (تواجهك)
+
+  const length = Math.max(3, layout.railLength);
+  const zoneW = layout.xs[layout.n - 1] - layout.xs[0] + layout.maxFront + 0.1;
 
   // عند إغلاق المنتج نعيد القطع إلى وضع الراحة
   useEffect(() => {
@@ -22,6 +25,14 @@ export default function Rack({ items, openId, hiddenId, onOpen }) {
     }
   }, [openId]);
 
+  // أثناء السحب للتنقل نُلغي حالة "المؤشر فوق القطعة"
+  useFrame(() => {
+    if (pan.dragging) {
+      if (hovered !== -1) setHovered(-1);
+      if (pinned !== -1) setPinned(-1);
+    }
+  });
+
   // شكل المؤشر: يد عند الوقوف فوق قطعة
   useEffect(() => {
     document.body.style.cursor = hovered >= 0 && !openId ? "pointer" : "auto";
@@ -30,32 +41,24 @@ export default function Rack({ items, openId, hiddenId, onOpen }) {
     };
   }, [hovered, openId]);
 
-  // نختار أقرب قطعة لموضع المؤشر على القضيب
-  const pick = (x) => {
-    let best = -1;
-    let bestDist = Infinity;
-    xs.forEach((px, i) => {
-      const d = Math.abs(x - px);
-      if (d < bestDist) {
-        bestDist = d;
-        best = i;
-      }
-    });
-    return bestDist < SPACING / 2 + 0.06 ? best : -1;
-  };
-
   return (
     <group>
       <Rail length={length} y={RAIL_Y} />
 
       {items.map((p, i) => (
-        <SwayingHanger key={p.id} x={xs[i]} seed={i}>
+        <SwayingHanger
+          key={p.id}
+          x={layout.xs[i]}
+          slide={slideOffset(layout, active, i)}
+          lift={active === i ? 0.04 : 0}
+          seed={i}
+        >
           <ChromeHook />
           <PhotoGarment
             id={p.id}
-            position={[0, hangPosition(i, n)[1] - RAIL_Y, hangPosition(i, n)[2]]}
+            position={[0, hangPosition(layout, i)[1] - RAIL_Y, HOOK_Z + 0.006]}
             hidden={openId === p.id || hiddenId === p.id}
-            target={hovered === i || pinned === i ? 0 : REST_TURN}
+            target={active === i ? 0 : REST_TURN}
           />
         </SwayingHanger>
       ))}
@@ -66,12 +69,14 @@ export default function Rack({ items, openId, hiddenId, onOpen }) {
           position={[0, RAIL_Y - 0.4, 0.1]}
           onPointerMove={(e) => {
             e.stopPropagation();
-            setHovered(pick(e.point.x));
+            if (pan.dragging) return;
+            setHovered((cur) => pickIndex(layout, cur, e.point.x));
           }}
           onPointerOut={() => setHovered(-1)}
           onClick={(e) => {
             e.stopPropagation();
-            const i = pick(e.point.x);
+            if (pan.moved) return; // كان سحبًا وليس نقرة
+            const i = pickIndex(layout, hovered, e.point.x);
             if (i < 0) return;
             const touch = (e.pointerType ?? e.nativeEvent?.pointerType) === "touch";
             if (touch && pinned !== i) {
@@ -81,7 +86,7 @@ export default function Rack({ items, openId, hiddenId, onOpen }) {
             }
           }}
         >
-          <planeGeometry args={[length, 0.95]} />
+          <planeGeometry args={[Math.max(zoneW, 0.6), 0.95]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
         </mesh>
       )}
@@ -89,12 +94,18 @@ export default function Rack({ items, openId, hiddenId, onOpen }) {
   );
 }
 
-// مجموعة تتأرجح بلطف مثل شماعة معلّقة. تدور حول نقطة القضيب.
-function SwayingHanger({ x, seed, children }) {
+// شماعة تتأرجح بلطف، وتنزلق جانبيًا لتفسح للقطعة المفتوحة، وتتقدّم قليلًا عند تفتح.
+// ملاحظة: نضبط موضعها في useFrame فقط حتى لا يعيده React إلى مكانه.
+function SwayingHanger({ x, slide, lift, seed, children }) {
   const ref = useRef();
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    ref.current.rotation.z = Math.sin(t * 1.1 + seed * 1.7) * 0.012;
+  const cur = useRef({ slide: 0, lift: 0 });
+  useFrame(({ clock }, dt) => {
+    const step = Math.min(dt, 0.05);
+    cur.current.slide = THREE.MathUtils.damp(cur.current.slide, slide, 12, step);
+    cur.current.lift = THREE.MathUtils.damp(cur.current.lift, lift, 12, step);
+    ref.current.position.x = x + cur.current.slide;
+    ref.current.position.z = cur.current.lift;
+    ref.current.rotation.z = Math.sin(clock.elapsedTime * 1.1 + seed * 1.7) * 0.012;
   });
   return (
     <group ref={ref} position={[x, RAIL_Y, 0]}>

@@ -1,13 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 // موضع الجدار خلف القضيب (بالمتر). القضيب عند z = 0
 export const WALL_Z = -0.32;
-const WALL_W = 14;
 const WALL_H = 6;
 
 // نرسم نقطة واحدة صغيرة على لوحة 64×64 ونكررها على كل الجدار
-function makeDotTexture() {
+function makeDotTexture(width) {
   const c = document.createElement("canvas");
   c.width = c.height = 64;
   const g = c.getContext("2d");
@@ -20,7 +20,7 @@ function makeDotTexture() {
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(WALL_W / 0.1, WALL_H / 0.1); // نقطة كل 10 سم
+  t.repeat.set(width / 0.1, WALL_H / 0.1); // نقطة كل 10 سم
   t.anisotropy = 8;
   return t;
 }
@@ -41,28 +41,34 @@ function makeVignetteTexture() {
   return t;
 }
 
-export default function Wall() {
-  const dots = useMemo(makeDotTexture, []);
+export default function Wall({ width = 14 }) {
+  const dots = useMemo(() => makeDotTexture(width), [width]);
   const vignette = useMemo(makeVignetteTexture, []);
   const cy = WALL_H / 2;
+  const glow = useRef();
+
+  // طبقة التدرّج تتبع الكاميرا عند التنقل على الرف الطويل
+  useFrame(({ camera }) => {
+    if (glow.current) glow.current.position.x = camera.position.x;
+  });
 
   return (
     <group>
       {/* الجدار نفسه: مادة بلا إضاءة حتى يبقى اللون كما هو تمامًا */}
       <mesh position={[0, cy, WALL_Z]}>
-        <planeGeometry args={[WALL_W, WALL_H]} />
+        <planeGeometry args={[width, WALL_H]} />
         <meshBasicMaterial map={dots} toneMapped={false} />
       </mesh>
 
       {/* طبقة التدرّج الدائري */}
-      <mesh position={[0, 1.7, WALL_Z + 0.001]}>
+      <mesh ref={glow} position={[0, 1.7, WALL_Z + 0.001]}>
         <planeGeometry args={[7, 4.4]} />
         <meshBasicMaterial map={vignette} transparent depthWrite={false} toneMapped={false} />
       </mesh>
 
       {/* طبقة تلتقط الظلال فقط (تظهر ظل القطعة على الجدار) */}
       <mesh position={[0, cy, WALL_Z + 0.002]} receiveShadow>
-        <planeGeometry args={[WALL_W, WALL_H]} />
+        <planeGeometry args={[width, WALL_H]} />
         <shadowMaterial transparent opacity={0.2} color="#3d382e" />
       </mesh>
     </group>

@@ -1,10 +1,13 @@
 import { WALL_Z } from "./Wall";
 import { RAIL_RADIUS } from "./ChromeHook";
 
-// قضيب الملابس المعدني مع حاملَين يثبّتانه بالجدار.
+// قضيب الملابس المعدني مع حوامل تثبّته بالجدار (حامل كل ~1.5 متر).
 // محور القضيب عند (0, y, 0).
 export default function Rail({ length = 3, y = 1.75 }) {
-  const brackets = [-length / 2 + 0.15, length / 2 - 0.15];
+  const count = Math.max(2, Math.ceil(length / 1.6) + 1);
+  const first = -length / 2 + 0.15;
+  const last = length / 2 - 0.15;
+  const brackets = Array.from({ length: count }, (_, i) => first + ((last - first) * i) / (count - 1));
   const bracketLen = -WALL_Z;
 
   const chrome = <meshStandardMaterial color="#ececef" metalness={1} roughness={0.16} />;
@@ -25,7 +28,7 @@ export default function Rail({ length = 3, y = 1.75 }) {
         </mesh>
       ))}
 
-      {/* الحاملان: ساق قصيرة + قرص على الجدار */}
+      {/* الحوامل: ساق قصيرة + قرص على الجدار */}
       {brackets.map((x) => (
         <group key={x} position={[x, 0, 0]}>
           <mesh position={[0, 0, WALL_Z / 2]} rotation={[Math.PI / 2, 0, 0]} castShadow>

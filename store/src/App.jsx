@@ -83,7 +83,7 @@ export default function App() {
 
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} />
 
-      {!product && !cartOpen && <div className="hint">مرّر المؤشر على القطعة وانقر عليها · على الجوال المسها مرتين</div>}
+      {!product && !cartOpen && <div className="hint">مرّر المؤشر على القطعة وانقر عليها · اسحب للتنقل · على الجوال المسها مرتين</div>}
     </div>
   );
 }
