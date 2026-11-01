@@ -17,5 +17,12 @@ export const products = [
     colorway: "أخضر غابي",
     // true = المقاس متوفر ، false = نفد
     sizes: { S: true, M: true, L: false, XL: true },
-  },
+  }, {
+       id: "t-shirt-offwhite",
+       category: "clothing",
+       name: "تيشيرت أوف وايت",
+       price: 25000,
+       colorway: "أوف وايت",
+       sizes: { S: true, M: true, L: true, XL: true },
+     }, 
 ];

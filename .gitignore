@@ -1,3 +1,4 @@
 generated/
 sources/
 pipeline/cutouts/
+__pycache__/
