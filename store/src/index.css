@@ -615,3 +615,109 @@ body {
     display: none;
   }
 }
+
+
+/* ============================================================
+   قائمة المنتجات (البديل العادي) وعرض الصورة الكبيرة
+   ============================================================ */
+.list-view {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow-y: auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 84px) 18px 40px;
+  background: var(--wall);
+}
+.list-grid {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 18px;
+}
+.list-card {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: start;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.list-img {
+  aspect-ratio: 4 / 5;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.55);
+  overflow: hidden;
+}
+.list-img img {
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+.list-card:hover .list-img img {
+  transform: scale(1.04);
+}
+.list-cat {
+  margin-top: 10px;
+  font-size: 11px;
+  color: #777;
+}
+.list-name {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.list-price {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.viewer2d {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 80px 450px 30px 110px;
+  background: var(--wall);
+}
+.viewer2d img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  animation: fade-in 0.35s ease both;
+}
+
+/* ترتيب الطبقات: الترويسة والأزرار فوق القائمة، واللوحة فوق الصورة */
+.header { z-index: 10; }
+.close-btn, .top-right { z-index: 10; }
+.thumbs, .card { z-index: 20; }
+.panel { z-index: 20; }
+.close-btn { font-family: "Cairo", system-ui, sans-serif; }
+
+.server-error p {
+  margin: 0;
+}
+.server-error .link-btn,
+.server-error a {
+  display: inline-block;
+  margin-top: 8px;
+  font: 700 13px "Cairo", system-ui, sans-serif;
+  color: #7a1712;
+  text-decoration: underline;
+}
+
+@media (max-width: 760px) {
+  .viewer2d {
+    padding: 70px 16px 400px;
+  }
+  .list-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}

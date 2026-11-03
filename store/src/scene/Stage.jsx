@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import PhotoGarment from "./PhotoGarment";
@@ -119,14 +119,16 @@ export default function Stage({ items, layout, openId, view, onShown }) {
 
       {shownId && (
         <group ref={group}>
-          <PhotoGarment
-            id={shownId}
-            target={target}
-            initialTurn={0}
-            cutKey={cut}
-            castShadows={false}
-            renderOrder={10}
-          />
+          <Suspense fallback={null}>
+            <PhotoGarment
+              id={shownId}
+              target={target}
+              initialTurn={0}
+              cutKey={cut}
+              castShadows={false}
+              renderOrder={10}
+            />
+          </Suspense>
         </group>
       )}
     </>

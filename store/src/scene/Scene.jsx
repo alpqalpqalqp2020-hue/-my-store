@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Environment, Lightformer } from "@react-three/drei";
+import { Environment, Lightformer, useProgress } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import Wall from "./Wall";
@@ -10,6 +10,7 @@ import garmentViews from "../data/garmentViews.json";
 import { computeLayout } from "./layout";
 import { clamp } from "../lib/math";
 import { pan } from "./pan";
+import { hideBoot } from "../lib/boot";
 
 // قطع الملابس وترتيبها على القضيب (يُحسب مرة واحدة)
 const clothes = products.filter((p) => p.category === "clothing");
@@ -100,6 +101,19 @@ function PanControls({ enabled }) {
   return null;
 }
 
+// يُخفي شاشة التحميل عندما تجهز صور القطع (أو بعد 6 ثوانٍ كحد أقصى)
+function BootGate() {
+  const progress = useProgress((state) => state.progress);
+  useEffect(() => {
+    if (progress >= 100) hideBoot();
+  }, [progress]);
+  useEffect(() => {
+    const t = setTimeout(hideBoot, 6000);
+    return () => clearTimeout(t);
+  }, []);
+  return null;
+}
+
 // الضوء الذي يصنع الظلال: يتبع الكاميرا ليبقى الظل صحيحًا على الرف الطويل
 function KeyLight() {
   const light = useRef();
@@ -149,6 +163,7 @@ export default function Scene({ openId, view, onOpen }) {
       <Stage items={clothes} layout={layout} openId={openId} view={view} onShown={setShownId} />
       <CameraRig frozen={!!openId} />
       <PanControls enabled={!openId} />
+      <BootGate />
     </>
   );
 }

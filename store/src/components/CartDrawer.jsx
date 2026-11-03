@@ -4,6 +4,7 @@ import { CATEGORY_LABELS } from "../data/labels";
 import { DELIVERY_FEE, GOVERNORATES, ORDER_ENDPOINT } from "../data/shop";
 import { formatPrice } from "../lib/format";
 import { normalizePhone, validateCustomer } from "../lib/validate";
+import { CONTACT_WHATSAPP } from "../data/contact";
 
 const EMPTY_FORM = { name: "", phone: "", governorate: "", address: "", notes: "", website: "" };
 
@@ -13,7 +14,7 @@ export default function CartDrawer({ open, onClose, cart }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [sending, setSending] = useState(false);
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useState(null); // { text, goCart, contact }
   const [orderNo, setOrderNo] = useState("");
 
   // عند الفتح من جديد نعود إلى قائمة السلة (إلا إذا كنا في شاشة التأكيد)
@@ -40,7 +41,7 @@ export default function CartDrawer({ open, onClose, cart }) {
     if (Object.keys(found).length > 0) return;
 
     setSending(true);
-    setServerError("");
+    setServerError(null);
     try {
       // نرسل المعرّفات والمقاسات والكميات فقط. الأسعار يحسبها الخادم بنفسه.
       const res = await fetch(ORDER_ENDPOINT, {
@@ -59,14 +60,40 @@ export default function CartDrawer({ open, onClose, cart }) {
         }),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) throw new Error(data?.error || "failed");
-      setOrderNo(data.orderNo);
-      cart.clear();
-      setStep("done");
+      if (res.ok && data?.ok) {
+        setOrderNo(data.orderNo);
+        cart.clear();
+        setStep("done");
+        return;
+      }
+      explainFailure(data);
     } catch {
-      setServerError("تعذّر إرسال الطلب. تأكد من الاتصال بالإنترنت وحاول مرة أخرى.");
+      // لم يصل الطلب أصلًا: انقطع الاتصال
+      setServerError({ text: "لا يوجد اتصال بالإنترنت. تأكد من اتصالك ثم أعد المحاولة." });
     } finally {
       setSending(false);
+    }
+  };
+
+  // نشرح للزبون ما حدث بكلمات يفهمها، ونصلح ما يمكن إصلاحه تلقائيًا
+  const explainFailure = (data) => {
+    const code = data?.error;
+    if (code === "size_unavailable") {
+      if (data.product && data.size) cart.remove(data.product, data.size); // نزيل ما نفد
+      setServerError({
+        text: "عذرًا، إحدى القطع في سلتك نفدت بهذا المقاس، وأزلناها من السلة. راجع سلتك ثم أكمل الطلب.",
+        goCart: true,
+      });
+    } else if (code === "unknown_product" || code === "bad_items") {
+      setServerError({ text: "إحدى القطع في سلتك لم تعد متوفرة. راجع سلتك ثم أكمل الطلب.", goCart: true });
+    } else if (code === "bad_qty") {
+      setServerError({ text: "الكمية غير صحيحة. اجعلها بين 1 و10 لكل قطعة.", goCart: true });
+    } else if (code === "invalid_customer") {
+      setErrors(data.fields ?? {});
+      setServerError({ text: "راجع الحقول المعلّمة بالأحمر وصحّحها ثم أعد المحاولة." });
+    } else {
+      // مشكلة عندنا نحن (الخادم أو تيليجرام): لا ذنب للزبون فيها
+      setServerError({ text: "تعذّر إرسال طلبك الآن. حاول بعد دقائق قليلة، أو تواصل معنا مباشرة.", contact: true });
     }
   };
 
@@ -84,7 +111,13 @@ export default function CartDrawer({ open, onClose, cart }) {
       <aside className={`drawer ${open ? "open" : ""}`} dir="rtl" role="dialog" aria-modal="true" aria-label={title} aria-hidden={!open}>
         <div className="drawer-head">
           {step === "checkout" ? (
-            <button className="link-btn" onClick={() => setStep("cart")}>
+            <button
+              className="link-btn"
+              onClick={() => {
+                setServerError(null);
+                setStep("cart");
+              }}
+            >
               ← رجوع
             </button>
           ) : (
@@ -218,7 +251,28 @@ export default function CartDrawer({ open, onClose, cart }) {
               </div>
             </div>
 
-            {serverError && <p className="server-error">{serverError}</p>}
+            {serverError && (
+              <div className="server-error" role="alert">
+                <p>{serverError.text}</p>
+                {serverError.goCart && (
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => {
+                      setServerError(null);
+                      setStep("cart");
+                    }}
+                  >
+                    ← العودة إلى السلة
+                  </button>
+                )}
+                {serverError.contact && CONTACT_WHATSAPP && (
+                  <a href={`https://wa.me/${CONTACT_WHATSAPP}`} target="_blank" rel="noreferrer">
+                    تواصل معنا عبر واتساب
+                  </a>
+                )}
+              </div>
+            )}
 
             <button className="primary-btn" type="submit" disabled={sending}>
               {sending ? "جارٍ الإرسال…" : "تأكيد الطلب"}

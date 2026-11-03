@@ -130,7 +130,8 @@ async function handleOrder(request, env, url) {
     .join("\n");
 
   // 7) الإرسال إلى تيليجرام
-  const token = env.TELEGRAM_BOT_TOKEN;
+  // ننظّف القيمتين من المسافات، ومن كلمة bot إن أضافها أحد بالخطأ في أول الرمز
+  const token = String(env.TELEGRAM_BOT_TOKEN ?? "").trim().replace(/^bot/i, "");
   const chatIds = String(env.TELEGRAM_CHAT_ID ?? "")
     .split(",")
     .map((s) => s.trim())
@@ -145,9 +146,14 @@ async function handleOrder(request, env, url) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: chatId, text: message, disable_web_page_preview: true }),
       });
-      if (res.ok) delivered++;
-    } catch {
-      /* نجرّب المعرّف التالي */
+      if (res.ok) {
+        delivered++;
+      } else {
+        // سبب الرفض يظهر في سجلات Cloudflare (لا نكتب الرمز السري في السجل)
+        console.error("telegram rejected the message", res.status, (await res.text()).slice(0, 200));
+      }
+    } catch (err) {
+      console.error("telegram request failed", String(err).slice(0, 200)); // ثم نجرّب المعرّف التالي
     }
   }
   // إذا لم تصل الرسالة لأحد نخبر الزبون ليعيد المحاولة (حتى لا يضيع الطلب بصمت)

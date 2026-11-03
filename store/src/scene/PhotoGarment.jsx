@@ -36,6 +36,7 @@ export default function PhotoGarment({
   initialTurn = REST_TURN, // زاوية البداية
   cutKey = 0, // إذا تغيّر الرقم: قفزة فورية إلى الهدف مع تلاشٍ سريع
   castShadows = true,
+  fadeIn = false, // تظهر القطعة بتلاشٍ ناعم عند التحميل
   hidden = false,
   renderOrder = 0,
   position = [0, 0, 0],
@@ -55,7 +56,7 @@ export default function PhotoGarment({
 
   const { camera } = useThree();
   const turn = useRef(initialTurn);
-  const fade = useRef(1);
+  const fade = useRef(fadeIn ? 0 : 1);
   const lastCut = useRef(cutKey);
   const lastA = useRef(-1);
   const lastB = useRef(-1);

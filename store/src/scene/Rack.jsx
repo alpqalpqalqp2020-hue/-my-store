@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import Rail from "./Rail";
@@ -54,12 +54,16 @@ export default function Rack({ items, layout, openId, hiddenId, onOpen }) {
           seed={i}
         >
           <ChromeHook />
-          <PhotoGarment
-            id={p.id}
-            position={[0, hangPosition(layout, i)[1] - RAIL_Y, HOOK_Z + 0.006]}
-            hidden={openId === p.id || hiddenId === p.id}
-            target={active === i ? 0 : REST_TURN}
-          />
+          {/* كل قطعة في Suspense خاص بها: الغرفة تظهر فورًا ولا تنتظر الصور */}
+          <Suspense fallback={null}>
+            <PhotoGarment
+              id={p.id}
+              position={[0, hangPosition(layout, i)[1] - RAIL_Y, HOOK_Z + 0.006]}
+              hidden={openId === p.id || hiddenId === p.id}
+              target={active === i ? 0 : REST_TURN}
+              fadeIn
+            />
+          </Suspense>
         </SwayingHanger>
       ))}
 
