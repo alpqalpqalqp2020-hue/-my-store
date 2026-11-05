@@ -3,7 +3,6 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import PhotoGarment from "./PhotoGarment";
 import garmentViews from "../data/garmentViews.json";
-import { hangPosition } from "./layout";
 import { lerp, smoothstep } from "../lib/math";
 
 // ============================================================
@@ -23,7 +22,7 @@ const _up = new THREE.Vector3();
 const _origin = new THREE.Vector3();
 const _rack = new THREE.Vector3();
 
-export default function Stage({ items, layout, openId, view, onShown }) {
+export default function Stage({ hangWorld, openId, view, onShown }) {
   const { camera, size } = useThree();
   const [shownId, setShownId] = useState(null);
   const [cut, setCut] = useState(0);
@@ -95,8 +94,7 @@ export default function Stage({ items, layout, openId, view, onShown }) {
       .addScaledVector(_right, offX)
       .addScaledVector(_up, offY + (garmentH * fit) / 2); // أصل القطعة = أعلى الشماعة
 
-    const idx = items.findIndex((p) => p.id === shownId);
-    const [rx, ry, rz] = hangPosition(layout, Math.max(idx, 0));
+    const [rx, ry, rz] = hangWorld(shownId); // نقطة تعليقها على القضيب (في العالم)
     _rack.set(rx, ry, rz);
 
     group.current.position.lerpVectors(_rack, _origin, s);

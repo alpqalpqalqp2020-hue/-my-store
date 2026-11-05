@@ -1,10 +1,12 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { ROOM_H, WALL_OFFSET } from "./room";
+import { pan } from "./pan";
 
 // موضع الجدار خلف القضيب (بالمتر). القضيب عند z = 0
-export const WALL_Z = -0.32;
-const WALL_H = 6;
+export const WALL_Z = -WALL_OFFSET;
+const WALL_H = ROOM_H; // الجدار بارتفاع الغرفة
 
 // نرسم نقطة واحدة صغيرة على لوحة 64×64 ونكررها على كل الجدار
 function makeDotTexture(width) {
@@ -48,8 +50,8 @@ export default function Wall({ width = 14 }) {
   const glow = useRef();
 
   // طبقة التدرّج تتبع الكاميرا عند التنقل على الرف الطويل
-  useFrame(({ camera }) => {
-    if (glow.current) glow.current.position.x = camera.position.x;
+  useFrame(() => {
+    if (glow.current) glow.current.position.x = pan.current;
   });
 
   return (

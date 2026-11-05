@@ -7,6 +7,8 @@ import CartButton from "./components/CartButton";
 import CartDrawer from "./components/CartDrawer";
 import ListView from "./components/ListView";
 import Viewer2D from "./components/Viewer2D";
+import SectionBar from "./components/SectionBar";
+import { sections } from "./scene/sections";
 import useCart from "./lib/useCart";
 import { hasWebGL } from "./lib/webgl";
 import { hideBoot } from "./lib/boot";
@@ -21,6 +23,7 @@ export default function App() {
   const [view, setView] = useState(0); // 0 أمام ، 1 جانب ، 2 خلف
   const [size, setSize] = useState(null); // المقاس المختار
   const [cartOpen, setCartOpen] = useState(false); // درج السلة
+  const [focus, setFocus] = useState("overview"); // "overview" = المتجر ، أو معرّف قسم
   const cart = useCart();
 
   const product = products.find((p) => p.id === openId) ?? null;
@@ -42,11 +45,12 @@ export default function App() {
     const onKey = (e) => {
       if (e.key !== "Escape") return;
       if (cartOpen) setCartOpen(false);
-      else close();
+      else if (openId) close();
+      else setFocus("overview"); // ثم نعود إلى "المتجر"
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [close, cartOpen]);
+  }, [close, cartOpen, openId]);
 
   const switchMode = () => {
     setOpenId(null);
@@ -54,7 +58,12 @@ export default function App() {
   };
 
   return (
-    <div className="app">
+    <div
+      className="app"
+      onDoubleClick={(e) => {
+        if (mode === "3d" && !openId && e.target.tagName === "CANVAS") setFocus("overview");
+      }}
+    >
       {mode === "3d" ? (
         <Canvas
           shadows="variance"
@@ -67,7 +76,7 @@ export default function App() {
           }}
         >
           <Suspense fallback={null}>
-            <Scene openId={openId} view={view} onOpen={open} />
+            <Scene openId={openId} view={view} focus={focus} onOpen={open} />
           </Suspense>
         </Canvas>
       ) : (
@@ -114,7 +123,14 @@ export default function App() {
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} />
 
       {mode === "3d" && !product && !cartOpen && (
-        <div className="hint">مرّر المؤشر على القطعة وانقر عليها · اسحب للتنقل · على الجوال المسها مرتين</div>
+        <>
+          <div className="hint">
+            {focus === "overview"
+              ? "اسحب للنظر حول الغرفة · اختر قسمًا من الشريط"
+              : "مرّر المؤشر على القطعة وانقر عليها · اسحب للتنقل · على الجوال المسها مرتين"}
+          </div>
+          <SectionBar sections={sections} focus={focus} onFocus={setFocus} />
+        </>
       )}
     </div>
   );

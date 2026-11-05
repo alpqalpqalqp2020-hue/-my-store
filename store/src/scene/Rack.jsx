@@ -10,6 +10,7 @@ import { pan } from "./pan";
 
 // قضيب الملابس: قضيب + قطع معلّقة متقاربة + منطقة تفاعل واحدة غير مرئية
 export default function Rack({ items, layout, openId, hiddenId, onOpen }) {
+  const root = useRef(null); // لتحويل موضع المؤشر إلى إحداثيات القسم
   const [hovered, setHovered] = useState(-1); // القطعة التي يقف عليها المؤشر
   const [pinned, setPinned] = useState(-1); // القطعة المثبّتة باللمس
   const active = hovered >= 0 ? hovered : pinned; // القطعة المفتوحة الآن (تواجهك)
@@ -42,7 +43,7 @@ export default function Rack({ items, layout, openId, hiddenId, onOpen }) {
   }, [hovered, openId]);
 
   return (
-    <group>
+    <group ref={root}>
       <Rail length={length} y={RAIL_Y} />
 
       {items.map((p, i) => (
@@ -74,13 +75,13 @@ export default function Rack({ items, layout, openId, hiddenId, onOpen }) {
           onPointerMove={(e) => {
             e.stopPropagation();
             if (pan.dragging) return;
-            setHovered((cur) => pickIndex(layout, cur, e.point.x));
+            setHovered((cur) => pickIndex(layout, cur, root.current.worldToLocal(e.point.clone()).x));
           }}
           onPointerOut={() => setHovered(-1)}
           onClick={(e) => {
             e.stopPropagation();
             if (pan.moved) return; // كان سحبًا وليس نقرة
-            const i = pickIndex(layout, hovered, e.point.x);
+            const i = pickIndex(layout, hovered, root.current.worldToLocal(e.point.clone()).x);
             if (i < 0) return;
             const touch = (e.pointerType ?? e.nativeEvent?.pointerType) === "touch";
             if (touch && pinned !== i) {
