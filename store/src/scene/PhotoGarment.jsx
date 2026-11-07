@@ -21,6 +21,8 @@ export const REST_TURN = -1.35; // وضع الراحة: القطعة شبه جا
 const ASSET_VERSION = 1; // ارفع الرقم عند تغيير الصور ليتحدث المتصفح
 
 const _pos = new THREE.Vector3();
+const _quat = new THREE.Quaternion();
+const _euler = new THREE.Euler();
 
 // يضع بطاقة الصورة بحيث تقع نقطة تعليق الشماعة عند أصل المجموعة
 function placeCard(mesh, view, mirrored, w, h) {
@@ -119,9 +121,12 @@ export default function PhotoGarment({
     const g = smoothstep(Math.abs(f - 0.5) / 0.1);
     const tilt = TILT * off * g;
 
-    // البطاقة تواجه الكاميرا حول المحور الرأسي فقط
+    // البطاقة تواجه الكاميرا حول المحور الرأسي فقط.
+    // نطرح دوران الجدار الذي تعلّق عليه القطعة (الأقسام على الجدران الجانبية مدوّرة)
     group.current.getWorldPosition(_pos);
-    const yaw = Math.atan2(camera.position.x - _pos.x, camera.position.z - _pos.z);
+    group.current.getWorldQuaternion(_quat);
+    _euler.setFromQuaternion(_quat, "YXZ");
+    const yaw = Math.atan2(camera.position.x - _pos.x, camera.position.z - _pos.z) - _euler.y;
     inner.current.rotation.y = yaw + tilt;
   });
 

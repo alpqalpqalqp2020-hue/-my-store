@@ -19,7 +19,7 @@ function makeFloorTexture() {
 }
 
 // الغرفة: أرضية + سقف بإضاءة + جدران سادة للأقسام التي لم تُبنَ بعد + وزرة سفلية
-export default function Room({ room, decorated }) {
+export default function Room({ room, ownWalls = [] }) {
   const { size, center, height } = room;
   const floor = useMemo(makeFloorTexture, []);
 
@@ -50,7 +50,7 @@ export default function Room({ room, decorated }) {
         const base = toWorld(frame, [0, 0.045, -0.32 + 0.008]);
         return (
           <group key={k}>
-            {k >= decorated && (
+            {!ownWalls.includes(k) && (
               <mesh position={mid} rotation={[0, frame.rotationY, 0]}>
                 <planeGeometry args={[size, height]} />
                 <meshBasicMaterial color="#e4e2dc" toneMapped={false} />

@@ -24,5 +24,12 @@ export const products = [
        price: 25000,
        colorway: "أوف وايت",
        sizes: { S: true, M: true, L: true, XL: true },
-     }, 
+     }, {
+    id: "cap-navy",
+    category: "caps",
+    name: "قبعة كحلية",
+    price: 15000,
+    colorway: "كحلي",
+    sizes: { "حر": true },
+  }, 
 ];

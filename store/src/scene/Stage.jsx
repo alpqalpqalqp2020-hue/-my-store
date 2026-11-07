@@ -4,6 +4,7 @@ import * as THREE from "three";
 import PhotoGarment from "./PhotoGarment";
 import garmentViews from "../data/garmentViews.json";
 import { lerp, smoothstep } from "../lib/math";
+import { fillFor } from "./sections";
 
 // ============================================================
 // منصة عرض المنتج: عند فتح منتج تطير القطعة من القضيب إلى
@@ -79,12 +80,18 @@ export default function Stage({ hangWorld, openId, view, onShown }) {
     const mobile = size.width < 760;
     const visibleH = 2 * DIST * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     const metersPerPx = visibleH / size.height;
-    const garmentH = garmentViews[shownId].front.size[1];
-    const fit = ((mobile ? 0.36 : 0.74) * visibleH) / garmentH;
+    const front = garmentViews[shownId].front;
+    const garmentW = front.size[0];
+    const garmentH = front.size[1];
+    const anchorY = front.anchor[1]; // موضع نقطة التعليق من أعلى الصورة
+    let fit = (fillFor(shownId, mobile) * visibleH) / garmentH;
 
     // مساحة العرض الحرة: يسار البطاقة على الكمبيوتر، فوق الورقة السفلية على الجوال
     const offX = mobile ? 0 : -210 * metersPerPx;
     const offY = mobile ? 0.2 * size.height * metersPerPx : 0;
+    // لا نترك القطعة العريضة (كالقبعة) تتجاوز المساحة الحرة عرضًا
+    const freeW = mobile ? visibleH * (size.width / size.height) * 0.92 : (size.width - 600) * metersPerPx;
+    fit = Math.min(fit, (0.85 * Math.max(freeW, 0.3)) / garmentW);
 
     _right.crossVectors(_fwd, camera.up).normalize();
     _up.crossVectors(_right, _fwd).normalize();
@@ -92,9 +99,9 @@ export default function Stage({ hangWorld, openId, view, onShown }) {
       .copy(camera.position)
       .addScaledVector(_fwd, DIST)
       .addScaledVector(_right, offX)
-      .addScaledVector(_up, offY + (garmentH * fit) / 2); // أصل القطعة = أعلى الشماعة
+      .addScaledVector(_up, offY + (0.5 - anchorY) * garmentH * fit); // أصل القطعة = نقطة تعليقها
 
-    const [rx, ry, rz] = hangWorld(shownId); // نقطة تعليقها على القضيب (في العالم)
+    const [rx, ry, rz] = hangWorld(shownId); // نقطة تعليقها في الغرفة (في العالم)
     _rack.set(rx, ry, rz);
 
     group.current.position.lerpVectors(_rack, _origin, s);

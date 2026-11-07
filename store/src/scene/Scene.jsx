@@ -6,15 +6,15 @@ import Wall from "./Wall";
 import Rack from "./Rack";
 import Stage from "./Stage";
 import Room from "./RoomView";
+import CapsWall from "./CapsWall";
 import { sections, room, hangWorld } from "./sections";
 import { toWorld, lookDirection, nearestAngle } from "./room";
 import { clamp } from "../lib/math";
 import { pan, look, OVERVIEW_PITCH } from "./pan";
 import { hideBoot } from "../lib/boot";
 
-const PORTRAIT_VIEW_W = 1.1; // عرض الجدار الظاهر على الجوال (بالمتر)
 const PAN_CLICK_LIMIT = 10; // تحرّك أقل من 10 بكسل يُعدّ نقرة وليس سحبًا
-const EYE_Y = 1.4; // ارتفاع العين
+const EYE_Y = 1.4; // ارتفاع العين في وضع المتجر
 const SECTION_FOV = 32; // زاوية الرؤية أمام القسم
 const OVERVIEW_FOV = 40; // أوسع قليلًا في وضع المتجر ليظهر القضيب والأرضية معًا
 const LOOK_SPEED = { x: 0.0045, y: 0.003 }; // حساسية النظر حول الغرفة
@@ -49,18 +49,16 @@ function CameraRig({ focus, frozen }) {
 
     if (sec) {
       // ----- وضع القسم: نتسع لنرى الجدار، وننتقل بالسحب على امتداده -----
-      const L = sec.layout;
-      const viewW =
-        aspect < 1 ? PORTRAIT_VIEW_W : clamp(L.restWidth + 2 * L.maxDelta + 1.2, 3.4, 4.4);
+      const viewW = sec.viewW(aspect);
       const dist = clamp(viewW / (aspect * 2 * tanH), 2.4, 8);
       pan.mpp = (2 * dist * tanH * aspect) / size.width;
-      pan.max = Math.max(0, (Math.max(3, L.railLength) - viewW) / 2);
+      pan.max = Math.max(0, (sec.extent - viewW) / 2);
       pan.target = clamp(pan.target, -pan.max, pan.max);
       pan.current = THREE.MathUtils.damp(pan.current, pan.target, 6, dt);
 
       const k = frozen ? 0 : 1; // حركة خفيفة مع المؤشر (تتوقف عند فتح منتج)
-      goalPos = toWorld(sec.frame, [pan.current + pointer.x * 0.12 * k, EYE_Y + pointer.y * 0.05 * k, dist]);
-      goalTarget = toWorld(sec.frame, [pan.current, 0.95, 0]); // ننظر قليلًا إلى الأسفل فيظهر طرف الأرضية
+      goalPos = toWorld(sec.frame, [pan.current + pointer.x * 0.12 * k, sec.cam.eyeY + pointer.y * 0.05 * k, dist]);
+      goalTarget = toWorld(sec.frame, [pan.current, sec.cam.targetY, 0]); // ننظر قليلًا إلى الأسفل في الملابس فيظهر طرف الأرضية
     } else {
       // ----- وضع المتجر: نقف وسط الغرفة وننظر حولنا -----
       pan.max = 0;
@@ -211,18 +209,25 @@ export default function Scene({ openId, view, focus, onOpen }) {
       </Environment>
 
       <KeyLight focus={focus} />
-      <Room room={room} decorated={sections.length} />
+      <Room room={room} ownWalls={sections.filter((s) => s.ownWall).map((s) => s.frame.k)} />
 
       {sections.map((s) => (
         <group key={s.id} position={s.frame.position} rotation={[0, s.frame.rotationY, 0]}>
-          <Wall width={room.size} />
-          <Rack
-            items={s.items}
-            layout={s.layout}
-            openId={openId}
-            hiddenId={shownId}
-            onOpen={onOpen}
-          />
+          {s.kind === "pegboard" ? (
+            <CapsWall
+              items={s.items}
+              board={s.board}
+              roomSize={room.size}
+              openId={openId}
+              hiddenId={shownId}
+              onOpen={onOpen}
+            />
+          ) : (
+            <>
+              <Wall width={room.size} />
+              <Rack items={s.items} layout={s.layout} openId={openId} hiddenId={shownId} onOpen={onOpen} />
+            </>
+          )}
         </group>
       ))}
 
