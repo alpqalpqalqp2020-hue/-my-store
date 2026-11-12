@@ -5,6 +5,7 @@ import PhotoGarment from "./PhotoGarment";
 import garmentViews from "../data/garmentViews.json";
 import { lerp, smoothstep } from "../lib/math";
 import { fillFor } from "./sections";
+import { insets } from "./insets";
 
 // ============================================================
 // منصة عرض المنتج: عند فتح منتج تطير القطعة من القضيب إلى
@@ -76,22 +77,27 @@ export default function Stage({ hangWorld, openId, view, onShown }) {
 
     if (!shownId || !group.current) return;
 
-    // قياسات الشاشة
-    const mobile = size.width < 760;
+    // قياسات الشاشة والمساحة الحرة (ما لا تغطيه الترويسة والبطاقة والصور المصغّرة)
+    const W = size.width;
+    const H = size.height;
     const visibleH = 2 * DIST * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    const metersPerPx = visibleH / size.height;
+    const metersPerPx = visibleH / H;
     const front = garmentViews[shownId].front;
     const garmentW = front.size[0];
     const garmentH = front.size[1];
     const anchorY = front.anchor[1]; // موضع نقطة التعليق من أعلى الصورة
-    let fit = (fillFor(shownId, mobile) * visibleH) / garmentH;
 
-    // مساحة العرض الحرة: يسار البطاقة على الكمبيوتر، فوق الورقة السفلية على الجوال
-    const offX = mobile ? 0 : -210 * metersPerPx;
-    const offY = mobile ? 0.2 * size.height * metersPerPx : 0;
-    // لا نترك القطعة العريضة (كالقبعة) تتجاوز المساحة الحرة عرضًا
-    const freeW = mobile ? visibleH * (size.width / size.height) * 0.92 : (size.width - 600) * metersPerPx;
-    fit = Math.min(fit, (0.85 * Math.max(freeW, 0.3)) / garmentW);
+    const availW = Math.max(W - insets.left - insets.right, 120);
+    const availH = Math.max(H - insets.top - insets.bottom, 120);
+    const fill = fillFor(shownId); // نسبة ما تشغله القطعة من المساحة الحرة
+    // نكبّر القطعة حتى تملأ المساحة الحرة طولًا أو عرضًا (أيهما أضيق)، فلا تُقصّ أبدًا
+    const fit = Math.min(
+      (fill * availH * metersPerPx) / garmentH,
+      (fill * availW * metersPerPx) / garmentW
+    );
+    // مركز المساحة الحرة نسبةً إلى مركز الشاشة
+    const offX = (insets.left + availW / 2 - W / 2) * metersPerPx;
+    const offY = (H / 2 - (insets.top + availH / 2)) * metersPerPx;
 
     _right.crossVectors(_fwd, camera.up).normalize();
     _up.crossVectors(_right, _fwd).normalize();

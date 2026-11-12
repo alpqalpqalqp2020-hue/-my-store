@@ -761,3 +761,63 @@ body {
 .hint {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
 }
+
+
+/* ============================================================
+   الجوال: ورقة سفلية مدمجة تترك للقطعة مساحة واسعة
+   ============================================================ */
+@media (max-width: 760px) {
+  .card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 12px;
+    align-items: center;
+    padding: 14px 16px calc(env(safe-area-inset-bottom, 0px) + 14px);
+  }
+  .card-cat,
+  .card-sep {
+    display: none;
+  }
+  .card-name {
+    margin: 0;
+    font-size: 17px;
+  }
+  .card-price {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    margin: 0;
+    font-size: 15px;
+  }
+  .card-color {
+    grid-column: 1;
+    margin: 1px 0 0;
+    font-size: 11px;
+  }
+  .size-head,
+  .sizes,
+  .add-btn,
+  .view-cart {
+    grid-column: 1 / -1;
+  }
+  .size-head {
+    margin: 10px 0 6px;
+    font-size: 12px;
+  }
+  .size {
+    height: 38px;
+    font-size: 13px;
+  }
+  .add-btn {
+    height: 44px;
+    margin-top: 10px;
+  }
+  .thumbs {
+    gap: 8px;
+    padding-bottom: 8px;
+  }
+  .thumb {
+    width: 44px;
+    height: 48px;
+    padding: 3px;
+  }
+}

@@ -12,9 +12,8 @@ import { clamp } from "../lib/math";
 // ============================================================
 const SUPPORTED = ["clothing", "caps"];
 
-// كم من ارتفاع الشاشة تشغله القطعة عند فتحها (القبعة الصغيرة أقل لئلا تتضخم)
-const FILL_DESKTOP = { clothing: 0.74, caps: 0.55 };
-const FILL_MOBILE = { clothing: 0.36, caps: 0.3 };
+// نسبة ما تشغله القطعة المفتوحة من المساحة الحرة على الشاشة (القبعة أقل حتى لا تتضخم)
+const FILL = { clothing: 0.92, caps: 0.7 };
 const PORTRAIT_VIEW_W = 1.1; // عرض الجدار الظاهر على الجوال (بالمتر)
 
 function build(category) {
@@ -73,9 +72,8 @@ export function hangWorld(id) {
   return [0, 1.6, 0];
 }
 
-// نسبة الشاشة التي تشغلها القطعة المفتوحة
-export function fillFor(id, mobile) {
+// نسبة المساحة الحرة التي تشغلها القطعة المفتوحة
+export function fillFor(id) {
   const category = products.find((p) => p.id === id)?.category;
-  const table = mobile ? FILL_MOBILE : FILL_DESKTOP;
-  return table[category] ?? table.clothing;
+  return FILL[category] ?? FILL.clothing;
 }

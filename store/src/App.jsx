@@ -9,6 +9,7 @@ import ListView from "./components/ListView";
 import Viewer2D from "./components/Viewer2D";
 import SectionBar from "./components/SectionBar";
 import { sections } from "./scene/sections";
+import { insets } from "./scene/insets";
 import useCart from "./lib/useCart";
 import { hasWebGL } from "./lib/webgl";
 import { hideBoot } from "./lib/boot";
@@ -34,6 +35,41 @@ export default function App() {
     setSize(null);
   }, []);
   const close = useCallback(() => setOpenId(null), []);
+
+  // عند فتح منتج نقيس المساحة التي تغطيها البطاقة والصور المصغّرة، لتوضع القطعة كاملة في الباقي
+  useEffect(() => {
+    if (!product) return;
+    const measure = () => {
+      const app = document.querySelector(".app");
+      if (!app) return;
+      const A = app.getBoundingClientRect();
+      insets.top = 76; // الترويسة
+      if (A.width < 760) {
+        const panel = document.querySelector(".panel");
+        if (!panel) return;
+        const p = panel.getBoundingClientRect();
+        insets.bottom = Math.max(24, A.bottom - p.top + 10);
+        insets.left = 14;
+        insets.right = 14;
+      } else {
+        const thumbs = document.querySelector(".thumbs");
+        const card = document.querySelector(".card");
+        if (!thumbs || !card) return;
+        insets.left = thumbs.getBoundingClientRect().right - A.left + 24;
+        insets.right = A.right - card.getBoundingClientRect().left + 24;
+        insets.bottom = 30;
+      }
+    };
+    measure();
+    const card = document.querySelector(".card");
+    const ro = new ResizeObserver(measure);
+    if (card) ro.observe(card);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [product]);
 
   // في وضع القائمة لا يوجد ما ننتظر تحميله
   useEffect(() => {
